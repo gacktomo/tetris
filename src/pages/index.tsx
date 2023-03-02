@@ -8,6 +8,7 @@ import {
   minoColorMap,
   minoShapeMap,
   ReleasePosition,
+  Rotation,
 } from "@/constants";
 
 const initField = new Array(FieldHeight)
@@ -16,50 +17,56 @@ const initField = new Array(FieldHeight)
 
 export default function Home() {
   const [field, setField] = useState<Mino[][]>(initField);
-  const [fallenField, setFallenField] = useState<Mino[][]>(initField);
-  const displayField = field.map((row, y) => {
-    return row.map((cell, x) => {
-      return fallenField[y][x] === Mino.None ? cell : fallenField[y][x];
-    });
-  });
+  const [displayField, setDisplayField] = useState<Mino[][]>(initField);
+  const [currentMino, setCurrentMino] = useState<{
+    mino: Mino;
+    rotation: Rotation;
+    x: number;
+    y: number;
+  }>({ mino: Mino.None, rotation: Rotation.R0, x: 0, y: 0 });
 
   const releaseMino = useCallback(() => {
     const minos = Object.values(Mino).filter(
       (mino) => mino !== Mino.None
     ) as Mino[];
     const mino = minos[Math.floor(Math.random() * minos.length)];
-    setField((prevField) => {
-      const newField = prevField.map((row) => row.map((cell) => cell));
-      const shape = minoShapeMap.get(mino)!;
-      for (const y in shape) {
-        const row = shape[y];
-        for (const x in row) {
-          newField[y][ReleasePosition + Number(x)] = row[x];
-        }
-      }
-      return newField;
-    });
+    setCurrentMino({ mino, rotation: Rotation.R0, x: ReleasePosition, y: -1 });
   }, []);
 
-  const moveMino = useCallback(() => {
-    setField((prevField) => {
-      if (prevField[FieldHeight - 1].some((cell) => cell !== Mino.None)) {
-        setFallenField(prevField);
-        releaseMino();
-        return initField;
+  const moveMino = () => {
+    const newMinoState = { ...currentMino, y: currentMino.y + 1 };
+    const newField = field.map((row) => row.map((cell) => cell));
+    const shape = minoShapeMap.get(currentMino.mino);
+    if (!shape) return;
+    for (const [y, row] of shape.entries()) {
+      for (const [x, cell] of row.entries()) {
+        if (cell === Mino.None) continue;
+        const newY = newMinoState.y + y;
+        const newX = newMinoState.x + x;
+        if (newY >= FieldHeight || field[newY][newX] !== Mino.None) {
+          if (currentMino.y < 0) {
+            alert("Game Over");
+            return;
+          }
+          setField(displayField);
+          releaseMino();
+          return;
+        } else {
+          newField[newY][newX] = cell;
+        }
       }
-      const newField = fallenField.map((row) => row.map((cell) => cell));
-      for (let i = 0; i < prevField.length - 1; i++) {
-        newField[i + 1] = prevField[i];
-      }
-      return newField;
-    });
-  }, []);
+    }
+    setCurrentMino(newMinoState);
+    setDisplayField(newField);
+  };
 
   useEffect(() => {
     releaseMino();
-    setInterval(() => moveMino(), 250);
   }, []);
+
+  useEffect(() => {
+    setTimeout(() => moveMino(), 100);
+  }, [currentMino]);
 
   return (
     <>

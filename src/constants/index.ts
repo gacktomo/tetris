@@ -1,13 +1,22 @@
-export enum Mino {
-  I,
-  O,
-  T,
-  S,
-  Z,
-  J,
-  L,
-  None,
-}
+export const Mino = {
+  I: 0,
+  O: 1,
+  T: 2,
+  S: 3,
+  Z: 4,
+  J: 5,
+  L: 6,
+  None: 7,
+} as const;
+export type Mino = typeof Mino[keyof typeof Mino];
+
+export const Rotation = {
+  R0: 0,
+  R90: 1,
+  R180: 2,
+  R270: 3,
+} as const;
+export type Rotation = typeof Mino[keyof typeof Mino];
 
 export const minoColorMap = new Map<Mino, string>([
   [Mino.I, "cyan"],
