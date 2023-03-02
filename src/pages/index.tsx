@@ -25,10 +25,9 @@ export default function Home() {
 
   const releaseMino = useCallback(() => {
     const minos = Object.values(Mino).filter(
-      (mino) => mino.toString() !== Mino.None.toString()
+      (mino) => mino !== Mino.None
     ) as Mino[];
     const mino = minos[Math.floor(Math.random() * minos.length)];
-    console.log(mino);
     setField((prevField) => {
       const newField = prevField.map((row) => row.map((cell) => cell));
       const shape = minoShapeMap.get(mino)!;
