@@ -26,9 +26,7 @@ export default function Home() {
   }>({ mino: Mino.None, rotation: Rotation.R0, x: 0, y: 0 });
 
   const releaseMino = useCallback(() => {
-    const minos = Object.values(Mino).filter(
-      (mino) => mino !== Mino.None
-    ) as Mino[];
+    const minos = Object.values(Mino).filter((mino) => mino !== Mino.None);
     const mino = minos[Math.floor(Math.random() * minos.length)];
     setCurrentMino({ mino, rotation: Rotation.R0, x: ReleasePosition, y: -1 });
   }, []);
