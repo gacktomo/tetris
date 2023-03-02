@@ -33,7 +33,7 @@ export default function Home() {
     setCurrentMino({ mino, rotation: Rotation.R0, x: ReleasePosition, y: -1 });
   }, []);
 
-  const moveMino = useCallback(() => {
+  const moveMino = () => {
     const newMinoState = { ...currentMino, y: currentMino.y + 1 };
     const newField = field.map((row) => row.map((cell) => cell));
     const shape = minoShapeMap.get(currentMino.mino);
@@ -58,7 +58,7 @@ export default function Home() {
     }
     setCurrentMino(newMinoState);
     setDisplayField(newField);
-  }, []);
+  };
 
   useEffect(() => {
     releaseMino();
