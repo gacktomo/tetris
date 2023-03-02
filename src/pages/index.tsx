@@ -33,7 +33,7 @@ export default function Home() {
     setCurrentMino({ mino, rotation: Rotation.R0, x: ReleasePosition, y: -1 });
   }, []);
 
-  const moveMino = () => {
+  const moveMino = useCallback(() => {
     const newMinoState = { ...currentMino, y: currentMino.y + 1 };
     const newField = field.map((row) => row.map((cell) => cell));
     const shape = minoShapeMap.get(currentMino.mino);
@@ -58,7 +58,7 @@ export default function Home() {
     }
     setCurrentMino(newMinoState);
     setDisplayField(newField);
-  };
+  }, []);
 
   useEffect(() => {
     releaseMino();
@@ -76,7 +76,7 @@ export default function Home() {
       </Head>
 
       <main className={styles.main}>
-        <div className="">
+        <div>
           {displayField.map((row, y) => {
             return (
               <div key={y} className="flex">
