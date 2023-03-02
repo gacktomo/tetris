@@ -15,6 +15,7 @@ jobs:
       - run: pnpm ci && pnpm run export
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
+          version: 7.26.0
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_GACKTOMO_TETRIS }}'
           channelId: live
