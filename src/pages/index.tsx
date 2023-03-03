@@ -2,28 +2,30 @@ import Head from "next/head";
 import styles from "@/styles/Home.module.css";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Cell,
   FieldHeight,
   FieldWidth,
   Input,
   Mino,
-  minoColorMap,
+  cellColorMap,
   minoShapeMap,
   MinoState,
   ReleasePosition,
   Rotation,
 } from "@/constants";
 
+const minos = Object.values(Mino);
 const initField = new Array(FieldHeight)
   .fill(null)
-  .map(() => new Array(FieldWidth).fill(Mino.None));
+  .map(() => new Array(FieldWidth).fill(Cell.None));
 
 export default function Home() {
-  const [field, setField] = useState<Mino[][]>(initField);
-  const [displayField, setDisplayField] = useState<Mino[][]>(initField);
+  const [field, setField] = useState<Cell[][]>(initField);
+  const [displayField, setDisplayField] = useState<Cell[][]>(initField);
   const [inputQueue, setInputQueue] = useState<Input[]>([]);
   const [tick, setTick] = useState(0);
   const [currentMino, setCurrentMino] = useState<MinoState>({
-    mino: Mino.None,
+    mino: minos[Math.floor(Math.random() * minos.length)],
     rotation: Rotation.R0,
     x: 0,
     y: 0,
@@ -31,7 +33,6 @@ export default function Home() {
   const isReleased = useMemo(() => currentMino.y >= 0, [currentMino]);
 
   const releaseMino = useCallback(() => {
-    const minos = Object.values(Mino).filter((mino) => mino !== Mino.None);
     const mino = minos[Math.floor(Math.random() * minos.length)];
     setCurrentMino({ mino, rotation: Rotation.R0, x: ReleasePosition, y: -1 });
   }, []);
@@ -40,6 +41,8 @@ export default function Home() {
     const actions = [
       new Array(4).fill(null).map(() => Input.Left),
       new Array(4).fill(null).map(() => Input.Right),
+      [Input.RotateLeft],
+      [Input.RotateRight],
       [],
     ];
     setInputQueue((prev) => [
@@ -63,24 +66,26 @@ export default function Home() {
           if (newMinoState.x >= FieldWidth) return;
           break;
         case Input.RotateLeft:
-          newMinoState.rotation = ((newMinoState.rotation - 1) % 4) as Rotation;
+          newMinoState.rotation = ((currentMino.rotation - 1) % 4) as Rotation;
           break;
         case Input.RotateRight:
-          newMinoState.rotation = ((newMinoState.rotation + 1) % 4) as Rotation;
+          newMinoState.rotation = ((currentMino.rotation + 1) % 4) as Rotation;
           break;
         case Input.Down:
           newMinoState.y += 1;
           break;
       }
       const newField = field.map((row) => row.map((cell) => cell));
-      const shape = minoShapeMap.get(currentMino.mino);
+      const shape = minoShapeMap
+        .get(newMinoState.rotation)
+        ?.get(currentMino.mino);
       if (!shape) return;
       for (const [y, row] of shape.entries()) {
         for (const [x, cell] of row.entries()) {
-          if (cell === Mino.None) continue;
+          if (cell === Cell.None) continue;
           const newY = newMinoState.y + y;
           const newX = newMinoState.x + x;
-          if (newY >= FieldHeight || field[newY][newX] !== Mino.None) {
+          if (newY >= FieldHeight || field[newY][newX] !== Cell.None) {
             if (input !== Input.Down) return;
             if (currentMino.y < 0) {
               console.log("Game Over");
@@ -133,7 +138,7 @@ export default function Home() {
                   return (
                     <div
                       key={x}
-                      style={{ backgroundColor: minoColorMap.get(cell) }}
+                      style={{ backgroundColor: cellColorMap.get(cell) }}
                       className="w-5 h-5 border-2 border-white"
                     />
                   );
