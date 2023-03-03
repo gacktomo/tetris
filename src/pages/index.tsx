@@ -24,6 +24,7 @@ export default function Home() {
   const [displayField, setDisplayField] = useState<Cell[][]>(initField);
   const [inputQueue, setInputQueue] = useState<Input[]>([]);
   const [tick, setTick] = useState(0);
+  const [lineCount, setLineCount] = useState(0);
   const [currentMino, setCurrentMino] = useState<MinoState>({
     mino: minos[Math.floor(Math.random() * minos.length)],
     rotation: Rotation.R0,
@@ -38,18 +39,22 @@ export default function Home() {
   }, []);
 
   const decisionInput = useCallback(() => {
-    const actions = [
-      new Array(4).fill(null).map(() => Input.Left),
-      new Array(4).fill(null).map(() => Input.Right),
-      [Input.RotateLeft],
-      [Input.RotateRight],
-      [],
-    ];
+    const colHeights = new Array(FieldWidth).fill(-1);
+    for (const [y, row] of field.entries()) {
+      for (const [x, cell] of row.entries()) {
+        if (cell === Cell.None || colHeights[x] > 0) continue;
+        colHeights[x] = FieldHeight - y;
+      }
+    }
+    const lowestColIndex = colHeights.indexOf(Math.min(...colHeights));
+    const indexDiff = lowestColIndex - currentMino.x;
     setInputQueue((prev) => [
       ...prev,
-      ...actions[Math.round(Math.random() * (actions.length - 1))],
+      ...new Array(Math.abs(indexDiff))
+        .fill(null)
+        .map(() => (indexDiff > 0 ? Input.Right : Input.Left)),
     ]);
-  }, []);
+  }, [currentMino, field]);
 
   const moveMino = useCallback(
     (input: Input) => {
@@ -89,9 +94,24 @@ export default function Home() {
             if (currentMino.y < 0) {
               console.log("Game Over");
               setField(initField);
+              setLineCount(0);
               return;
             }
-            setField(displayField);
+
+            const deletedLineField = [];
+            for (let y = FieldHeight - 1; y >= 0; y--) {
+              const row = displayField[y];
+              if (row.every((cell) => cell !== Cell.None)) continue;
+              deletedLineField.unshift(row);
+            }
+            const deletedLineCount = FieldHeight - deletedLineField.length;
+            setLineCount((prev) => prev + deletedLineCount);
+            setField([
+              ...new Array(deletedLineCount).fill(
+                new Array(FieldWidth).fill(Cell.None)
+              ),
+              ...deletedLineField,
+            ]);
             releaseMino();
             return;
           } else {
@@ -129,6 +149,7 @@ export default function Home() {
       </Head>
 
       <main className={styles.main}>
+        <p>Deleted Line: {lineCount}</p>
         <div>
           {displayField.map((row, y) => {
             return (
