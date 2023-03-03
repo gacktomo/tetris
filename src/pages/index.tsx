@@ -54,15 +54,14 @@ export default function Home() {
   const moveMino = useCallback(
     (input: Input) => {
       const newMinoState = { ...currentMino };
+      if (currentMino.y < 0 && input !== Input.Down) return;
       switch (input) {
         case Input.Left:
           newMinoState.x -= 1;
-          if (currentMino.y < 0) return;
           if (newMinoState.x < 0) return;
           break;
         case Input.Right:
           newMinoState.x += 1;
-          if (currentMino.y < 0) return;
           if (newMinoState.x >= FieldWidth) return;
           break;
         case Input.RotateLeft:
