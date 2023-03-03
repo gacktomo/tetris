@@ -4,9 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import {
   FieldHeight,
   FieldWidth,
+  Input,
   Mino,
   minoColorMap,
   minoShapeMap,
+  MinoState,
   ReleasePosition,
   Rotation,
 } from "@/constants";
@@ -18,12 +20,14 @@ const initField = new Array(FieldHeight)
 export default function Home() {
   const [field, setField] = useState<Mino[][]>(initField);
   const [displayField, setDisplayField] = useState<Mino[][]>(initField);
-  const [currentMino, setCurrentMino] = useState<{
-    mino: Mino;
-    rotation: Rotation;
-    x: number;
-    y: number;
-  }>({ mino: Mino.None, rotation: Rotation.R0, x: 0, y: 0 });
+  const [inputQueue, setInputQueue] = useState<Input[]>([]);
+  const [tick, setTick] = useState(0);
+  const [currentMino, setCurrentMino] = useState<MinoState>({
+    mino: Mino.None,
+    rotation: Rotation.R0,
+    x: 0,
+    y: 0,
+  });
 
   const releaseMino = useCallback(() => {
     const minos = Object.values(Mino).filter((mino) => mino !== Mino.None);
@@ -31,8 +35,29 @@ export default function Home() {
     setCurrentMino({ mino, rotation: Rotation.R0, x: ReleasePosition, y: -1 });
   }, []);
 
-  const moveMino = () => {
-    const newMinoState = { ...currentMino, y: currentMino.y + 1 };
+  const moveMino = (input: Input) => {
+    const newMinoState = { ...currentMino };
+    switch (input) {
+      case Input.Left:
+        newMinoState.x -= 1;
+        if (currentMino.y < 0) return;
+        if (newMinoState.x < 0) return;
+        break;
+      case Input.Right:
+        newMinoState.x += 1;
+        if (currentMino.y < 0) return;
+        if (newMinoState.x >= FieldWidth) return;
+        break;
+      case Input.RotateLeft:
+        newMinoState.rotation = ((newMinoState.rotation - 1) % 4) as Rotation;
+        break;
+      case Input.RotateRight:
+        newMinoState.rotation = ((newMinoState.rotation + 1) % 4) as Rotation;
+        break;
+      case Input.Down:
+        newMinoState.y += 1;
+        break;
+    }
     const newField = field.map((row) => row.map((cell) => cell));
     const shape = minoShapeMap.get(currentMino.mino);
     if (!shape) return;
@@ -42,8 +67,10 @@ export default function Home() {
         const newY = newMinoState.y + y;
         const newX = newMinoState.x + x;
         if (newY >= FieldHeight || field[newY][newX] !== Mino.None) {
+          if (input !== Input.Down) return;
           if (currentMino.y < 0) {
-            alert("Game Over");
+            console.log("Game Over");
+            setField(initField);
             return;
           }
           setField(displayField);
@@ -60,11 +87,22 @@ export default function Home() {
 
   useEffect(() => {
     releaseMino();
+    setInterval(() => setTick(Math.random()), 33);
+    setInterval(() => setInputQueue([...inputQueue, Input.Down]), 50);
+    setInterval(
+      () =>
+        setInputQueue([
+          ...inputQueue,
+          [Input.Left, Input.Right][Math.round(Math.random())],
+        ]),
+      500
+    );
   }, []);
 
   useEffect(() => {
-    setTimeout(() => moveMino(), 100);
-  }, [currentMino]);
+    if (inputQueue.length === 0) return;
+    moveMino(inputQueue.shift() as Input);
+  }, [tick]);
 
   return (
     <>

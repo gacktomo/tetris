@@ -16,16 +16,26 @@ export const Rotation = {
   R180: 2,
   R270: 3,
 } as const;
-export type Rotation = typeof Mino[keyof typeof Mino];
+export type Rotation = typeof Rotation[keyof typeof Rotation];
+
+export const Input = {
+  Left: 0,
+  Right: 1,
+  Down: 2,
+  RotateLeft: 3,
+  RotateRight: 4,
+  Drop: 5,
+} as const;
+export type Input = typeof Input[keyof typeof Input];
 
 export const minoColorMap = new Map<Mino, string>([
-  [Mino.I, "cyan"],
-  [Mino.O, "yellow"],
-  [Mino.T, "purple"],
-  [Mino.S, "green"],
-  [Mino.Z, "red"],
-  [Mino.J, "blue"],
-  [Mino.L, "orange"],
+  [Mino.I, "#00ffff"],
+  [Mino.O, "#ffff00"],
+  [Mino.T, "#ff00ff"],
+  [Mino.S, "#00ff00"],
+  [Mino.Z, "#ff0000"],
+  [Mino.J, "#0000ff"],
+  [Mino.L, "#ffa500"],
   [Mino.None, "lightgrey"],
 ]);
 
@@ -74,6 +84,13 @@ export const minoShapeMap = new Map<Mino, Mino[][]>([
     ],
   ],
 ]);
+
+export type MinoState = {
+  mino: Mino;
+  rotation: Rotation;
+  x: number;
+  y: number;
+};
 
 export const FieldHeight = 22;
 export const FieldWidth = 10;
