@@ -19,24 +19,43 @@ const minos = Object.values(Mino);
 const initField = new Array(Height)
   .fill(null)
   .map(() => new Array(Width).fill(Cell.None));
+const initMinoState = {
+  mino: Mino.I,
+  rotation: Rotation.R0,
+  x: ReleasePosition,
+  y: -1,
+};
+const getMinoBag = () => {
+  const newMinoBag = [...minos];
+  for (let i = newMinoBag.length - 1; i >= 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newMinoBag[i], newMinoBag[j]] = [newMinoBag[j], newMinoBag[i]];
+  }
+  return newMinoBag;
+};
 
 export default function Home() {
   const [field, setField] = useState<Cell[][]>(initField);
   const [displayField, setDisplayField] = useState<Cell[][]>(initField);
   const [inputQueue, setInputQueue] = useState<Input[]>([]);
+  const [_, setMinoBag] = useState<Mino[]>([]);
   const [tick, setTick] = useState(0);
   const [lineCount, setLineCount] = useState(0);
-  const [currentMino, setCurrentMino] = useState<MinoState>({
-    mino: minos[Math.floor(Math.random() * minos.length)],
-    rotation: Rotation.R0,
-    x: 0,
-    y: 0,
-  });
+  const [currentMino, setCurrentMino] = useState<MinoState>(initMinoState);
   const isReleased = useMemo(() => currentMino.y >= 0, [currentMino]);
 
   const releaseMino = useCallback(() => {
-    const mino = minos[Math.floor(Math.random() * minos.length)];
-    setCurrentMino({ mino, rotation: Rotation.R0, x: ReleasePosition, y: -1 });
+    setMinoBag((prev) => {
+      const newMinoBag = [...prev];
+      const mino = newMinoBag.shift();
+      if (mino !== undefined) {
+        setCurrentMino({ ...initMinoState, mino });
+      }
+      if (newMinoBag.length < 7) {
+        newMinoBag.push(...getMinoBag());
+      }
+      return newMinoBag;
+    });
   }, []);
 
   const decisionInput = useCallback(() => {
