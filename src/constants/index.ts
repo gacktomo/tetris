@@ -54,13 +54,13 @@ export const rotationInputMap = new Map<Rotation, Input[]>([
 ]);
 
 export const cellColorMap = new Map<Cell, string>([
-  [Cell.I, "#00ffff"],
-  [Cell.O, "#ffff00"],
-  [Cell.T, "#ff00ff"],
-  [Cell.S, "#00ff00"],
-  [Cell.Z, "#ff0000"],
-  [Cell.J, "#0000ff"],
-  [Cell.L, "#ffa500"],
+  [Cell.I, "#00dddd"],
+  [Cell.O, "#dddd00"],
+  [Cell.T, "#dd00dd"],
+  [Cell.S, "#00dd00"],
+  [Cell.Z, "#dd0000"],
+  [Cell.J, "#0000dd"],
+  [Cell.L, "#dda500"],
   [Cell.None, "lightgrey"],
 ]);
 

@@ -202,8 +202,11 @@ export default function Home() {
                   return (
                     <div
                       key={x}
-                      style={{ backgroundColor: cellColorMap.get(cell) }}
-                      className="w-5 h-5 border-2 border-white"
+                      style={{
+                        backgroundColor: cellColorMap.get(cell),
+                        borderWidth: 1,
+                      }}
+                      className="w-5 h-5 border-white"
                     />
                   );
                 })}
