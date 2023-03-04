@@ -60,19 +60,32 @@ export default function Home() {
   }, []);
 
   const decisionInput = useCallback(() => {
-    let bestMinoState = currentMino;
-    for (const [y, row] of field.entries()) {
-      for (const rotation of Object.values(Rotation)) {
-        for (const [x, cell] of row.entries()) {
-          const newMinoState = { ...currentMino, x, y, rotation };
-          const { status } = getMoveStatus(newMinoState);
-          if (status === MoveStatus.Movable) {
-            bestMinoState = newMinoState;
-            break;
+    const bestMinoState = (() => {
+      for (let y = Height - 1; y >= 0; y--) {
+        const row = field[y];
+        for (const rotation of Object.values(Rotation)) {
+          for (const [x, cell] of row.entries()) {
+            const newMinoState = { ...currentMino, x, y, rotation };
+            const { status } = getMoveStatus(newMinoState);
+            if (status === MoveStatus.Movable) {
+              let canPlaced = true;
+              for (let i = 0; i < 4; i++) {
+                const _y = y - 1 > 0 ? y - 1 : 0;
+                const newMinoState = { ...currentMino, x, y: _y, rotation };
+                const { status } = getMoveStatus(newMinoState);
+                if (status === MoveStatus.Blocked) {
+                  canPlaced = false;
+                  break;
+                }
+              }
+              if (!canPlaced) continue;
+              return newMinoState;
+            }
           }
         }
       }
-    }
+    })();
+    if (!bestMinoState) return;
     console.log(bestMinoState);
     const lowestColIndex = bestMinoState.x;
     const indexDiff = lowestColIndex - currentMino.x;
