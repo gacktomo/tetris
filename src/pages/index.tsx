@@ -13,6 +13,7 @@ import {
   ReleasePosition,
   Rotation,
   MoveStatus,
+  rotationInputMap,
 } from "@/constants";
 
 const minos = Object.values(Mino);
@@ -59,17 +60,25 @@ export default function Home() {
   }, []);
 
   const decisionInput = useCallback(() => {
-    const colHeights = new Array(Width).fill(-1);
+    let bestMinoState = currentMino;
     for (const [y, row] of field.entries()) {
-      for (const [x, cell] of row.entries()) {
-        if (cell === Cell.None || colHeights[x] > 0) continue;
-        colHeights[x] = Height - y;
+      for (const rotation of Object.values(Rotation)) {
+        for (const [x, cell] of row.entries()) {
+          const newMinoState = { ...currentMino, x, y, rotation };
+          const { status } = getMoveStatus(newMinoState);
+          if (status === MoveStatus.Movable) {
+            bestMinoState = newMinoState;
+            break;
+          }
+        }
       }
     }
-    const lowestColIndex = colHeights.indexOf(Math.min(...colHeights));
+    console.log(bestMinoState);
+    const lowestColIndex = bestMinoState.x;
     const indexDiff = lowestColIndex - currentMino.x;
     setInputQueue((prev) => [
       ...prev,
+      ...(rotationInputMap.get(bestMinoState.rotation) ?? []),
       ...new Array(Math.abs(indexDiff))
         .fill(null)
         .map(() => (indexDiff > 0 ? Input.Right : Input.Left)),
@@ -125,7 +134,7 @@ export default function Home() {
           if (newMinoState.x >= Width) return;
           break;
         case Input.RotateLeft:
-          newMinoState.rotation = ((currentMino.rotation - 1) % 4) as Rotation;
+          newMinoState.rotation = ((currentMino.rotation + 3) % 4) as Rotation;
           break;
         case Input.RotateRight:
           newMinoState.rotation = ((currentMino.rotation + 1) % 4) as Rotation;

@@ -46,6 +46,13 @@ export const MoveStatus = {
 } as const;
 export type MoveStatus = typeof MoveStatus[keyof typeof MoveStatus];
 
+export const rotationInputMap = new Map<Rotation, Input[]>([
+  [Rotation.R0, []],
+  [Rotation.R90, [Input.RotateRight]],
+  [Rotation.R180, [Input.RotateRight, Input.RotateRight]],
+  [Rotation.R270, [Input.RotateLeft]],
+]);
+
 export const cellColorMap = new Map<Cell, string>([
   [Cell.I, "#00ffff"],
   [Cell.O, "#ffff00"],
