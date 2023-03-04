@@ -60,8 +60,8 @@ export const cellColorMap = new Map<Cell, string>([
   [Cell.S, "#00dd00"],
   [Cell.Z, "#dd0000"],
   [Cell.J, "#0000dd"],
-  [Cell.L, "#dda500"],
-  [Cell.None, "lightgrey"],
+  [Cell.L, "#ddaa00"],
+  [Cell.None, "#eeeeee"],
 ]);
 
 const OMinoShape = [
