@@ -39,6 +39,13 @@ export const Input = {
 } as const;
 export type Input = typeof Input[keyof typeof Input];
 
+export const MoveStatus = {
+  Movable: 0,
+  Blocked: 1,
+  GameOver: 2,
+} as const;
+export type MoveStatus = typeof MoveStatus[keyof typeof MoveStatus];
+
 export const cellColorMap = new Map<Cell, string>([
   [Cell.I, "#00ffff"],
   [Cell.O, "#ffff00"],
@@ -56,7 +63,13 @@ const OMinoShape = [
 ];
 
 export const minoShapeMapR0 = new Map<Mino, Cell[][]>([
-  [Mino.I, [[Cell.I, Cell.I, Cell.I, Cell.I]]],
+  [
+    Mino.I,
+    [
+      [Cell.I, Cell.I, Cell.I, Cell.I],
+      [Cell.None, Cell.None, Cell.None, Cell.None],
+    ],
+  ],
   [Mino.O, OMinoShape],
   [
     Mino.T,
@@ -101,7 +114,15 @@ export const minoShapeMapR0 = new Map<Mino, Cell[][]>([
 ]);
 
 export const minoShapeMapR90 = new Map<Mino, Cell[][]>([
-  [Mino.I, [[Cell.I], [Cell.I], [Cell.I], [Cell.I]]],
+  [
+    Mino.I,
+    [
+      [Cell.None, Cell.I],
+      [Cell.None, Cell.I],
+      [Cell.None, Cell.I],
+      [Cell.None, Cell.I],
+    ],
+  ],
   [Mino.O, OMinoShape],
   [
     Mino.T,
@@ -146,7 +167,13 @@ export const minoShapeMapR90 = new Map<Mino, Cell[][]>([
 ]);
 
 export const minoShapeMapR180 = new Map<Mino, Cell[][]>([
-  [Mino.I, [[Cell.I, Cell.I, Cell.I, Cell.I]]],
+  [
+    Mino.I,
+    [
+      [Cell.None, Cell.None, Cell.None, Cell.None],
+      [Cell.I, Cell.I, Cell.I, Cell.I],
+    ],
+  ],
   [Mino.O, OMinoShape],
   [
     Mino.T,
@@ -191,7 +218,15 @@ export const minoShapeMapR180 = new Map<Mino, Cell[][]>([
 ]);
 
 export const minoShapeMapR270 = new Map<Mino, Cell[][]>([
-  [Mino.I, [[Cell.I], [Cell.I], [Cell.I], [Cell.I]]],
+  [
+    Mino.I,
+    [
+      [Cell.I, Cell.None],
+      [Cell.I, Cell.None],
+      [Cell.I, Cell.None],
+      [Cell.I, Cell.None],
+    ],
+  ],
   [Mino.O, OMinoShape],
   [
     Mino.T,
@@ -249,6 +284,6 @@ export type MinoState = {
   y: number;
 };
 
-export const FieldHeight = 22;
-export const FieldWidth = 10;
-export const ReleasePosition = FieldWidth / 2 - 1;
+export const Height = 22;
+export const Width = 10;
+export const ReleasePosition = Width / 2 - 1;

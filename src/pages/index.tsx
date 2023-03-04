@@ -3,8 +3,8 @@ import styles from "@/styles/Home.module.css";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Cell,
-  FieldHeight,
-  FieldWidth,
+  Height,
+  Width,
   Input,
   Mino,
   cellColorMap,
@@ -12,12 +12,13 @@ import {
   MinoState,
   ReleasePosition,
   Rotation,
+  MoveStatus,
 } from "@/constants";
 
 const minos = Object.values(Mino);
-const initField = new Array(FieldHeight)
+const initField = new Array(Height)
   .fill(null)
-  .map(() => new Array(FieldWidth).fill(Cell.None));
+  .map(() => new Array(Width).fill(Cell.None));
 
 export default function Home() {
   const [field, setField] = useState<Cell[][]>(initField);
@@ -39,11 +40,11 @@ export default function Home() {
   }, []);
 
   const decisionInput = useCallback(() => {
-    const colHeights = new Array(FieldWidth).fill(-1);
+    const colHeights = new Array(Width).fill(-1);
     for (const [y, row] of field.entries()) {
       for (const [x, cell] of row.entries()) {
         if (cell === Cell.None || colHeights[x] > 0) continue;
-        colHeights[x] = FieldHeight - y;
+        colHeights[x] = Height - y;
       }
     }
     const lowestColIndex = colHeights.indexOf(Math.min(...colHeights));
@@ -56,6 +57,41 @@ export default function Home() {
     ]);
   }, [currentMino, field]);
 
+  const getMoveStatus = useCallback(
+    (minoState: MinoState) => {
+      const newField = field.map((row) => row.map((cell) => cell));
+      const shape = minoShapeMap.get(minoState.rotation)?.get(minoState.mino);
+      if (!shape) {
+        throw new Error("Invalid MinoState");
+      }
+      for (const [y, row] of shape.entries()) {
+        for (const [x, cell] of row.entries()) {
+          if (cell === Cell.None) continue;
+          const newY = minoState.y + y;
+          const newX = minoState.x + x;
+          if (newY >= Height || newField[newY][newX] !== Cell.None) {
+            return { status: MoveStatus.Blocked };
+          }
+          newField[newY][newX] = cell;
+        }
+      }
+      return { status: MoveStatus.Movable, movedField: newField };
+    },
+    [field]
+  );
+
+  const placeMino = useCallback(() => {
+    const deletedField = [];
+    for (let y = Height - 1; y >= 0; y--) {
+      const row = displayField[y];
+      if (row.every((cell) => cell !== Cell.None)) continue;
+      deletedField.unshift(row);
+    }
+    const delCount = Height - deletedField.length;
+    const blank = new Array(delCount).fill(new Array(Width).fill(Cell.None));
+    return { confirmedField: [...blank, ...deletedField], delCount };
+  }, [displayField]);
+
   const moveMino = useCallback(
     (input: Input) => {
       const newMinoState = { ...currentMino };
@@ -67,7 +103,7 @@ export default function Home() {
           break;
         case Input.Right:
           newMinoState.x += 1;
-          if (newMinoState.x >= FieldWidth) return;
+          if (newMinoState.x >= Width) return;
           break;
         case Input.RotateLeft:
           newMinoState.rotation = ((currentMino.rotation - 1) % 4) as Rotation;
@@ -79,48 +115,28 @@ export default function Home() {
           newMinoState.y += 1;
           break;
       }
-      const newField = field.map((row) => row.map((cell) => cell));
       const shape = minoShapeMap
         .get(newMinoState.rotation)
         ?.get(currentMino.mino);
       if (!shape) return;
-      for (const [y, row] of shape.entries()) {
-        for (const [x, cell] of row.entries()) {
-          if (cell === Cell.None) continue;
-          const newY = newMinoState.y + y;
-          const newX = newMinoState.x + x;
-          if (newY >= FieldHeight || field[newY][newX] !== Cell.None) {
-            if (input !== Input.Down) return;
-            if (currentMino.y < 0) {
-              console.log("Game Over");
-              setField(initField);
-              setLineCount(0);
-              return;
-            }
 
-            const deletedLineField = [];
-            for (let y = FieldHeight - 1; y >= 0; y--) {
-              const row = displayField[y];
-              if (row.every((cell) => cell !== Cell.None)) continue;
-              deletedLineField.unshift(row);
-            }
-            const deletedLineCount = FieldHeight - deletedLineField.length;
-            setLineCount((prev) => prev + deletedLineCount);
-            setField([
-              ...new Array(deletedLineCount).fill(
-                new Array(FieldWidth).fill(Cell.None)
-              ),
-              ...deletedLineField,
-            ]);
-            releaseMino();
-            return;
-          } else {
-            newField[newY][newX] = cell;
-          }
+      const { status: moveStatus, movedField } = getMoveStatus(newMinoState);
+      if (moveStatus === MoveStatus.Blocked) {
+        if (input !== Input.Down) return;
+        if (currentMino.y < 0) {
+          console.log("Game Over");
+          setField(initField);
+          setLineCount(0);
+          return;
         }
+        const { confirmedField, delCount } = placeMino();
+        setLineCount((prev) => prev + delCount);
+        setField(confirmedField);
+        releaseMino();
+      } else {
+        setCurrentMino(newMinoState);
+        setDisplayField(movedField);
       }
-      setCurrentMino(newMinoState);
-      setDisplayField(newField);
     },
     [currentMino, field, displayField, releaseMino]
   );
