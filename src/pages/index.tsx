@@ -34,6 +34,24 @@ const getMinoBag = () => {
   }
   return newMinoBag;
 };
+const getMinoBounds = (minoState: MinoState) => {
+  const shape = minoShapeMap.get(minoState.rotation)?.get(minoState.mino);
+  if (!shape) {
+    throw new Error("Invalid MinoState");
+  }
+  let top = -1;
+  let bottom = 0;
+  for (const [y, row] of shape.entries()) {
+    for (const [x, cell] of row.entries()) {
+      if (shape[y][x] !== Cell.None) {
+        if (top < 0) top = y;
+        bottom = y;
+      }
+    }
+  }
+  const { y } = minoState;
+  return { top: top + y, bottom: bottom + y };
+};
 
 export default function Home() {
   const [field, setField] = useState<Cell[][]>(initField);
@@ -41,6 +59,7 @@ export default function Home() {
   const [inputQueue, setInputQueue] = useState<Input[]>([]);
   const [_, setMinoBag] = useState<Mino[]>([]);
   const [tick, setTick] = useState(0);
+  const [pause, setPause] = useState(false);
   const [lineCount, setLineCount] = useState(0);
   const [currentMino, setCurrentMino] = useState<MinoState>(initMinoState);
   const isReleased = useMemo(() => currentMino.y >= 0, [currentMino]);
@@ -60,32 +79,29 @@ export default function Home() {
   }, []);
 
   const decisionInput = useCallback(() => {
-    const bestMinoState = (() => {
-      for (let y = Height - 1; y >= 0; y--) {
-        const row = field[y];
+    let bestMinoState = { ...currentMino, y: 0 };
+    for (let x = 0; x < Width; x++) {
+      let isBlocked = false;
+      for (let y = 0; y < Height; y++) {
+        if (isBlocked) break;
         for (const rotation of Object.values(Rotation)) {
-          for (const [x, cell] of row.entries()) {
-            const newMinoState = { ...currentMino, x, y, rotation };
-            const { status } = getMoveStatus(newMinoState);
-            if (status === MoveStatus.Movable) {
-              let canPlaced = true;
-              for (let i = 0; i < 4; i++) {
-                const _y = y - 1 > 0 ? y - 1 : 0;
-                const newMinoState = { ...currentMino, x, y: _y, rotation };
-                const { status } = getMoveStatus(newMinoState);
-                if (status === MoveStatus.Blocked) {
-                  canPlaced = false;
-                  break;
-                }
-              }
-              if (!canPlaced) continue;
-              return newMinoState;
-            }
+          const newMinoState = { ...currentMino, x, y, rotation };
+          const { status } = getMoveStatus(newMinoState);
+          if (status === MoveStatus.Movable) {
+            const { top, bottom } = getMinoBounds(bestMinoState);
+            const { top: newTop, bottom: newBottom } =
+              getMinoBounds(newMinoState);
+            if (top <= newTop && bottom <= newBottom)
+              bestMinoState = newMinoState;
+          } else {
+            isBlocked = true;
           }
         }
       }
-    })();
+    }
+
     if (!bestMinoState) return;
+    console.log(getMinoBounds(bestMinoState));
     console.log(bestMinoState);
     const lowestColIndex = bestMinoState.x;
     const indexDiff = lowestColIndex - currentMino.x;
@@ -184,11 +200,14 @@ export default function Home() {
 
   useEffect(() => {
     releaseMino();
-    setInterval(() => setTick(Math.random()), 33);
-    setInterval(() => setInputQueue((prev) => [...prev, Input.Down]), 100);
+    setInterval(() => setTick((prev) => (prev + 1) % 30), 33);
   }, []);
 
   useEffect(() => {
+    if (pause) return;
+    if (tick % 5 === 0) {
+      setInputQueue((prev) => [...prev, Input.Down]);
+    }
     if (inputQueue.length === 0) return;
     moveMino(inputQueue.shift() as Input);
   }, [tick]);
@@ -207,6 +226,9 @@ export default function Home() {
 
       <main className={styles.main}>
         <p>Deleted Line: {lineCount}</p>
+        <button onClick={() => setPause((prev) => !prev)}>
+          {pause ? "Resume" : "Pause"}
+        </button>
         <div>
           {displayField.map((row, y) => {
             return (
