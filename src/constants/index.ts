@@ -7,6 +7,7 @@ export const Cell = {
   J: 5,
   L: 6,
   None: 7,
+  Wall: 8,
 } as const;
 export type Cell = typeof Cell[keyof typeof Cell];
 
@@ -294,3 +295,14 @@ export type MinoState = {
 export const Height = 22;
 export const Width = 10;
 export const ReleasePosition = Width / 2 - 1;
+
+export const initField = new Array(Height)
+  .fill(null)
+  .map(() => new Array(Width).fill(Cell.None));
+
+export const initMinoState = {
+  mino: Mino.I,
+  rotation: Rotation.R0,
+  x: ReleasePosition,
+  y: -1,
+};

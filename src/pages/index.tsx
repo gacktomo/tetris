@@ -10,22 +10,13 @@ import {
   cellColorMap,
   minoShapeMap,
   MinoState,
-  ReleasePosition,
   Rotation,
   MoveStatus,
   rotationInputMap,
+  initField,
+  initMinoState,
 } from "@/constants";
-import { getMinoBag, getMinoBounds } from "@/utils";
-
-const initField = new Array(Height)
-  .fill(null)
-  .map(() => new Array(Width).fill(Cell.None));
-const initMinoState = {
-  mino: Mino.I,
-  rotation: Rotation.R0,
-  x: ReleasePosition,
-  y: -1,
-};
+import { getContactCount, getMinoBag, getMinoBounds, getShape } from "@/utils";
 
 export default function Home() {
   const [field, setField] = useState<Cell[][]>(initField);
@@ -54,7 +45,7 @@ export default function Home() {
 
   const decisionInput = useCallback(() => {
     let bestMinoState = { ...currentMino, y: 0 };
-    for (let x = 0; x < Width; x++) {
+    for (let x = -1; x < Width; x++) {
       let isBlocked = false;
       for (let y = 0; y < Height; y++) {
         if (isBlocked) break;
@@ -62,11 +53,15 @@ export default function Home() {
           const newMinoState = { ...currentMino, x, y, rotation };
           const { status } = getMoveStatus(newMinoState);
           if (status === MoveStatus.Movable) {
-            const { top, bottom } = getMinoBounds(bestMinoState);
-            const { top: newTop, bottom: newBottom } =
-              getMinoBounds(newMinoState);
-            if (top <= newTop && bottom <= newBottom)
+            const { bottom } = getMinoBounds(bestMinoState);
+            const { bottom: newBottom } = getMinoBounds(newMinoState);
+            const newCount = getContactCount(newMinoState, field);
+            const bestCount = getContactCount(bestMinoState, field);
+            if (bestCount < newCount) {
               bestMinoState = newMinoState;
+            } else if (bestCount === newCount && bottom < newBottom) {
+              bestMinoState = newMinoState;
+            }
           } else {
             isBlocked = true;
           }
@@ -75,8 +70,13 @@ export default function Home() {
     }
 
     if (!bestMinoState) return;
-    console.log(getMinoBounds(bestMinoState));
-    console.log(bestMinoState);
+    console.log({
+      ...bestMinoState,
+      mino: Object.entries(Mino).find(
+        ([_, v]) => v === bestMinoState.mino
+      )?.[0],
+      contacts: getContactCount(bestMinoState, field),
+    });
     const lowestColIndex = bestMinoState.x;
     const indexDiff = lowestColIndex - currentMino.x;
     setInputQueue((prev) => [
@@ -91,10 +91,7 @@ export default function Home() {
   const getMoveStatus = useCallback(
     (minoState: MinoState) => {
       const newField = field.map((row) => row.map((cell) => cell));
-      const shape = minoShapeMap.get(minoState.rotation)?.get(minoState.mino);
-      if (!shape) {
-        throw new Error("Invalid MinoState");
-      }
+      const shape = getShape(minoState);
       for (const [y, row] of shape.entries()) {
         for (const [x, cell] of row.entries()) {
           if (cell === Cell.None) continue;
@@ -179,7 +176,7 @@ export default function Home() {
 
   useEffect(() => {
     if (pause) return;
-    if (tick % 5 === 0) {
+    if (tick % 3 === 0) {
       setInputQueue((prev) => [...prev, Input.Down]);
     }
     if (inputQueue.length === 0) return;
