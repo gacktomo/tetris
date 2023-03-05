@@ -113,7 +113,7 @@ export default function Home() {
 
   useEffect(() => {
     if (pause) return;
-    if (tick % 3 === 0) {
+    if (tick % 2 === 0) {
       setInputQueue((prev) => [...prev, Input.Down]);
     }
     if (inputQueue.length === 0) return;
