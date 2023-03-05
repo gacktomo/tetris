@@ -3,13 +3,20 @@ import {
   Height,
   initField,
   initMinoState,
+  Input,
   Mino,
+  ReleasePosition,
   Rotation,
   Width,
 } from "@/constants";
-import { getMinoBounds, getContactCount, getShape } from "@/utils";
+import {
+  getMinoBounds,
+  getContactCount,
+  getShape,
+  decisionInput,
+} from "@/utils";
 
-test("Check getMinoBounds", () => {
+test("getMinoBounds", () => {
   const result = getMinoBounds({
     mino: Mino.I,
     rotation: Rotation.R270,
@@ -20,8 +27,8 @@ test("Check getMinoBounds", () => {
   expect(result.bottom).toBe(21);
 });
 
-test("getContactCount", () => {
-  it("Drop I mino to the right wall", () => {
+describe("getContactCount", () => {
+  test("Drop I mino to the right wall", () => {
     const { I, None } = Cell;
     const testField = [
       [None, None, None, None, None, None, None, None, I, None],
@@ -53,13 +60,13 @@ test("getContactCount", () => {
     expect(result).toBe(9);
   });
 
-  it("Drop I mino to the left wall", () => {
-    const { O, None } = Cell;
+  test("Drop I mino to the left wall", () => {
+    const { I, None } = Cell;
     const testField = [
-      [None, None, None, None, None, None, None, None, None, None],
-      [None, None, None, None, None, None, None, None, None, None],
-      [O, O, None, None, None, None, None, None, None, None],
-      [O, O, None, None, None, None, None, None, None, None],
+      [I, None, I, None, None, None, None, None, None, None],
+      [I, None, I, None, None, None, None, None, None, None],
+      [I, None, I, None, None, None, None, None, None, None],
+      [I, None, I, None, None, None, None, None, None, None],
     ];
     const field = [
       ...new Array(Height - testField.length)
@@ -77,11 +84,75 @@ test("getContactCount", () => {
     const result = getContactCount(
       {
         ...minoState,
-        x: Width - 1,
+        x: 1,
         y: Height - shape.length,
       },
       field
     );
     expect(result).toBe(9);
+  });
+});
+
+describe("decisionInput", () => {
+  test("Drop I mino to the left hall", () => {
+    const { I, None } = Cell;
+    const testField = [
+      [I, None, I, None, None, None, None, None, None, None],
+      [I, None, I, None, None, None, None, None, None, None],
+      [I, None, I, None, None, None, None, None, None, None],
+      [I, None, I, None, None, None, None, None, None, None],
+    ];
+    const field = [
+      ...new Array(Height - testField.length)
+        .fill(null)
+        .map(() => new Array(Width).fill(None)),
+      ...testField,
+    ];
+    const minoState = {
+      ...initMinoState,
+      mino: Mino.I,
+      rotation: Rotation.R270,
+      x: ReleasePosition,
+    };
+    const result = decisionInput(minoState, field);
+    expect(JSON.stringify(result)).toBe(
+      JSON.stringify([
+        Input.RotateRight,
+        Input.Left,
+        Input.Left,
+        Input.Left,
+        Input.Left,
+      ])
+    );
+  });
+
+  test("Drop J mino to the left hall", () => {
+    const { O, None } = Cell;
+    const testField = [
+      [None, O, O, None, None, None, None, None, None, None],
+      [None, O, O, None, None, None, None, None, None, None],
+    ];
+    const field = [
+      ...new Array(Height - testField.length)
+        .fill(null)
+        .map(() => new Array(Width).fill(None)),
+      ...testField,
+    ];
+    const minoState = {
+      ...initMinoState,
+      mino: Mino.I,
+      rotation: Rotation.R270,
+      x: ReleasePosition,
+    };
+    const result = decisionInput(minoState, field);
+    expect(JSON.stringify(result)).toBe(
+      JSON.stringify([
+        Input.RotateLeft,
+        Input.Left,
+        Input.Left,
+        Input.Left,
+        Input.Left,
+      ])
+    );
   });
 });

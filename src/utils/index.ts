@@ -1,4 +1,15 @@
-import { Cell, Mino, minoShapeMap, MinoState } from "@/constants";
+import {
+  Cell,
+  Height,
+  Input,
+  Mino,
+  minoShapeMap,
+  MinoState,
+  MoveStatus,
+  Rotation,
+  rotationInputMap,
+  Width,
+} from "@/constants";
 
 const minos = Object.values(Mino);
 
@@ -67,4 +78,70 @@ export const getContactCount = (minoState: MinoState, field: Cell[][]) => {
     }
   }
   return count;
+};
+
+export const getMoveStatus = (minoState: MinoState, field: Cell[][]) => {
+  const newField = field.map((row) => row.map((cell) => cell));
+  const shape = getShape(minoState);
+  for (const [y, row] of shape.entries()) {
+    for (const [x, cell] of row.entries()) {
+      if (cell === Cell.None) continue;
+      const newY = minoState.y + y;
+      const newX = minoState.x + x;
+      if (newY >= Height || newField[newY][newX] !== Cell.None) {
+        return { status: MoveStatus.Blocked };
+      }
+      newField[newY][newX] = cell;
+    }
+  }
+  return { status: MoveStatus.Movable, movedField: newField };
+};
+
+export const decisionInput = (currentMino: MinoState, field: Cell[][]) => {
+  let bestMinoState = { ...currentMino, y: 0 };
+  const rotations = Object.values(Rotation);
+  for (let x = 0; x < Width; x++) {
+    let isBlocked = false;
+    const blockedRotations = new Set<Rotation>();
+    for (let y = 0; y < Height; y++) {
+      if (isBlocked) break;
+      for (const rotation of rotations) {
+        if (blockedRotations.has(rotation)) continue;
+        const newMinoState = { ...currentMino, x, y, rotation };
+        const { status } = getMoveStatus(newMinoState, field);
+        if (status === MoveStatus.Movable) {
+          const { bottom } = getMinoBounds(bestMinoState);
+          const { bottom: newBottom } = getMinoBounds(newMinoState);
+          const newCount = getContactCount(newMinoState, field);
+          const bestCount = getContactCount(bestMinoState, field);
+          if (bestCount < newCount) {
+            bestMinoState = newMinoState;
+          } else if (bestCount === newCount && bottom < newBottom) {
+            bestMinoState = newMinoState;
+          }
+        } else {
+          blockedRotations.add(rotation);
+        }
+      }
+      if (blockedRotations.keys.length === rotations.length) {
+        isBlocked = true;
+      }
+    }
+  }
+
+  if (!bestMinoState) return [];
+  console.log({
+    ...bestMinoState,
+    mino: Object.entries(Mino).find(([_, v]) => v === bestMinoState.mino)?.[0],
+    contacts: getContactCount(bestMinoState, field),
+  });
+
+  const lowestColIndex = bestMinoState.x;
+  const indexDiff = lowestColIndex - currentMino.x;
+  return [
+    ...(rotationInputMap.get(bestMinoState.rotation) ?? []),
+    ...new Array(Math.abs(indexDiff))
+      .fill(null)
+      .map(() => (indexDiff > 0 ? Input.Right : Input.Left)),
+  ];
 };

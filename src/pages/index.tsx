@@ -12,11 +12,10 @@ import {
   MinoState,
   Rotation,
   MoveStatus,
-  rotationInputMap,
   initField,
   initMinoState,
 } from "@/constants";
-import { getContactCount, getMinoBag, getMinoBounds, getShape } from "@/utils";
+import { decisionInput, getMinoBag, getMoveStatus } from "@/utils";
 
 export default function Home() {
   const [field, setField] = useState<Cell[][]>(initField);
@@ -42,71 +41,6 @@ export default function Home() {
       return newMinoBag;
     });
   }, []);
-
-  const decisionInput = useCallback(() => {
-    let bestMinoState = { ...currentMino, y: 0 };
-    for (let x = -1; x < Width; x++) {
-      let isBlocked = false;
-      for (let y = 0; y < Height; y++) {
-        if (isBlocked) break;
-        for (const rotation of Object.values(Rotation)) {
-          const newMinoState = { ...currentMino, x, y, rotation };
-          const { status } = getMoveStatus(newMinoState);
-          if (status === MoveStatus.Movable) {
-            const { bottom } = getMinoBounds(bestMinoState);
-            const { bottom: newBottom } = getMinoBounds(newMinoState);
-            const newCount = getContactCount(newMinoState, field);
-            const bestCount = getContactCount(bestMinoState, field);
-            if (bestCount < newCount) {
-              bestMinoState = newMinoState;
-            } else if (bestCount === newCount && bottom < newBottom) {
-              bestMinoState = newMinoState;
-            }
-          } else {
-            isBlocked = true;
-          }
-        }
-      }
-    }
-
-    if (!bestMinoState) return;
-    console.log({
-      ...bestMinoState,
-      mino: Object.entries(Mino).find(
-        ([_, v]) => v === bestMinoState.mino
-      )?.[0],
-      contacts: getContactCount(bestMinoState, field),
-    });
-    const lowestColIndex = bestMinoState.x;
-    const indexDiff = lowestColIndex - currentMino.x;
-    setInputQueue((prev) => [
-      ...prev,
-      ...(rotationInputMap.get(bestMinoState.rotation) ?? []),
-      ...new Array(Math.abs(indexDiff))
-        .fill(null)
-        .map(() => (indexDiff > 0 ? Input.Right : Input.Left)),
-    ]);
-  }, [currentMino, field]);
-
-  const getMoveStatus = useCallback(
-    (minoState: MinoState) => {
-      const newField = field.map((row) => row.map((cell) => cell));
-      const shape = getShape(minoState);
-      for (const [y, row] of shape.entries()) {
-        for (const [x, cell] of row.entries()) {
-          if (cell === Cell.None) continue;
-          const newY = minoState.y + y;
-          const newX = minoState.x + x;
-          if (newY >= Height || newField[newY][newX] !== Cell.None) {
-            return { status: MoveStatus.Blocked };
-          }
-          newField[newY][newX] = cell;
-        }
-      }
-      return { status: MoveStatus.Movable, movedField: newField };
-    },
-    [field]
-  );
 
   const placeMino = useCallback(() => {
     const deletedField = [];
@@ -148,7 +82,10 @@ export default function Home() {
         ?.get(currentMino.mino);
       if (!shape) return;
 
-      const { status: moveStatus, movedField } = getMoveStatus(newMinoState);
+      const { status: moveStatus, movedField } = getMoveStatus(
+        newMinoState,
+        field
+      );
       if (moveStatus === MoveStatus.Blocked) {
         if (input !== Input.Down) return;
         if (currentMino.y < 0) {
@@ -185,7 +122,8 @@ export default function Home() {
 
   useEffect(() => {
     if (isReleased === false) return;
-    decisionInput();
+    const inputs = decisionInput(currentMino, field);
+    setInputQueue((prev) => [...prev, ...inputs]);
   }, [isReleased]);
 
   return (
