@@ -64,15 +64,20 @@ export const getContactCount = (minoState: MinoState, field: Cell[][]) => {
           if (!field[cellY + dy]) return Cell.Wall;
           if (field[cellY + dy]?.[cellX + dx]) {
             return field[cellY + dy][cellX + dx];
-          } else if (minoState.mino === Mino.I) {
-            return Cell.Wall;
           } else {
-            return Cell.None;
+            return Cell.Wall;
           }
         })();
         const targetShapeCell = shape[y + dy]?.[x + dx] ?? Cell.None;
         if (targetCell !== Cell.None && targetShapeCell === Cell.None) {
           count++;
+        }
+        if (
+          dy === 1 &&
+          targetCell === Cell.None &&
+          targetShapeCell === Cell.None
+        ) {
+          count -= 10;
         }
       }
     }
