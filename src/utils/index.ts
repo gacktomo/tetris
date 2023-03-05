@@ -102,7 +102,11 @@ export const getMoveStatus = (minoState: MinoState, field: Cell[][]) => {
   return { status: MoveStatus.Movable, movedField: newField };
 };
 
-export const decisionInput = (currentMino: MinoState, field: Cell[][]) => {
+export const decisionInput = (
+  currentMino: MinoState,
+  field: Cell[][],
+  hardDrop: boolean = true
+) => {
   let bestMinoState = { ...currentMino, y: 0 };
   const rotations = Object.values(Rotation);
   for (let x = 0; x < Width; x++) {
@@ -148,5 +152,6 @@ export const decisionInput = (currentMino: MinoState, field: Cell[][]) => {
     ...new Array(Math.abs(indexDiff))
       .fill(null)
       .map(() => (indexDiff > 0 ? Input.Right : Input.Left)),
+    ...(hardDrop ? [Input.Drop] : []),
   ];
 };

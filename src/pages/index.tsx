@@ -24,6 +24,7 @@ export default function Home() {
   const [_, setMinoBag] = useState<Mino[]>([]);
   const [tick, setTick] = useState(0);
   const [pause, setPause] = useState(false);
+  const [hardDrop, setHardDrop] = useState(false);
   const [lineCount, setLineCount] = useState(0);
   const [currentMino, setCurrentMino] = useState<MinoState>(initMinoState);
   const isReleased = useMemo(() => currentMino.y >= 0, [currentMino]);
@@ -42,17 +43,17 @@ export default function Home() {
     });
   }, []);
 
-  const placeMino = useCallback(() => {
+  const placeMino = useCallback((field: Cell[][]) => {
     const deletedField = [];
     for (let y = Height - 1; y >= 0; y--) {
-      const row = displayField[y];
+      const row = field[y];
       if (row.every((cell) => cell !== Cell.None)) continue;
       deletedField.unshift(row);
     }
     const delCount = Height - deletedField.length;
     const blank = new Array(delCount).fill(new Array(Width).fill(Cell.None));
     return { confirmedField: [...blank, ...deletedField], delCount };
-  }, [displayField]);
+  }, []);
 
   const moveMino = useCallback(
     (input: Input) => {
@@ -77,6 +78,29 @@ export default function Home() {
           newMinoState.y += 1;
           break;
       }
+
+      if (input === Input.Drop) {
+        let newField = [...field];
+        while (true) {
+          const { status, movedField } = getMoveStatus(
+            { ...newMinoState, y: newMinoState.y + 1 },
+            field
+          );
+          if (status === MoveStatus.Movable) {
+            newField = movedField;
+          }
+          if (status === MoveStatus.Blocked) {
+            const { confirmedField, delCount } = placeMino(newField);
+            setLineCount((prev) => prev + delCount);
+            setField(confirmedField);
+            releaseMino();
+            break;
+          }
+          newMinoState.y += 1;
+        }
+        return;
+      }
+
       const shape = minoShapeMap
         .get(newMinoState.rotation)
         ?.get(currentMino.mino);
@@ -94,7 +118,7 @@ export default function Home() {
           setLineCount(0);
           return;
         }
-        const { confirmedField, delCount } = placeMino();
+        const { confirmedField, delCount } = placeMino(displayField);
         setLineCount((prev) => prev + delCount);
         setField(confirmedField);
         releaseMino();
@@ -113,7 +137,7 @@ export default function Home() {
 
   useEffect(() => {
     if (pause) return;
-    if (tick % 2 === 0) {
+    if (tick % 3 === 0) {
       setInputQueue((prev) => [...prev, Input.Down]);
     }
     if (inputQueue.length === 0) return;
@@ -122,7 +146,7 @@ export default function Home() {
 
   useEffect(() => {
     if (isReleased === false) return;
-    const inputs = decisionInput(currentMino, field);
+    const inputs = decisionInput(currentMino, field, hardDrop);
     setInputQueue((prev) => [...prev, ...inputs]);
   }, [isReleased]);
 
@@ -137,6 +161,9 @@ export default function Home() {
         <p>Deleted Line: {lineCount}</p>
         <button onClick={() => setPause((prev) => !prev)}>
           {pause ? "Resume" : "Pause"}
+        </button>
+        <button onClick={() => setHardDrop((prev) => !prev)}>
+          {hardDrop ? "Hard Drop: On" : "Hard Drop: Off"}
         </button>
         <div>
           {displayField.map((row, y) => {
