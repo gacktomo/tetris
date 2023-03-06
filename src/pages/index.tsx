@@ -190,7 +190,7 @@ export default function Home() {
                         backgroundColor: cellColorMap.get(cell),
                         borderWidth: 1,
                       }}
-                      className="w-5 h-5 border-white"
+                      className="w-5 h-5 border-white transition-opacity duration-300"
                     />
                   );
                 })}
